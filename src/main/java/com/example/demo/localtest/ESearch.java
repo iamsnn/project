@@ -53,11 +53,6 @@ public class ESearch {
   }
 
   public static void main(String[] args) throws IOException {
-    Map<String, Object> template_params = new HashMap<>();
-    template_params.put("title", "never");
-
-
-
   }
 
   public static JSONArray customSearch(String input,String signal,String author,String year,
@@ -74,7 +69,7 @@ public class ESearch {
         boolQueryBuilder.should(new MatchQueryBuilder("year",year));
       }
       if(!author.equals("")){
-        boolQueryBuilder.must(new MatchQueryBuilder("author",author));
+        boolQueryBuilder.should(new MatchQueryBuilder("author",author).boost(50f).operator(Operator.OR));
       }
       searchSourceBuilder.query(boolQueryBuilder);
     }
@@ -97,13 +92,13 @@ public class ESearch {
         BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
         BoolQueryBuilder boolQueryBuilder1 = new BoolQueryBuilder();
         boolQueryBuilder.must(QueryBuilders.nestedQuery("review",
-                boolQueryBuilder1.must(QueryBuilders.matchQuery("review.r", input).minimumShouldMatch("50%").fuzziness(Fuzziness.AUTO).maxExpansions(50)), ScoreMode.Max).innerHit(new InnerHitBuilder()));
+                boolQueryBuilder1.must(QueryBuilders.matchQuery("review.r", input).minimumShouldMatch("75%").fuzziness(Fuzziness.AUTO).maxExpansions(15).operator(Operator.AND).zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL)), ScoreMode.Max).innerHit(new InnerHitBuilder()));
 
         if(!year.equals("")){
           boolQueryBuilder.should(new MatchQueryBuilder("year",year));
         }
         if(!author.equals("")){
-          boolQueryBuilder.should(new MatchQueryBuilder("author",author).boost(10f).operator(Operator.OR));
+          boolQueryBuilder.should(new MatchQueryBuilder("author",author).boost(50f).operator(Operator.OR));
         }
         searchSourceBuilder.query(boolQueryBuilder);
       }
@@ -115,7 +110,8 @@ public class ESearch {
         QueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("description", input)
                 .fuzziness(Fuzziness.AUTO)
                 .maxExpansions(20)
-                .minimumShouldMatch("75%");
+                .minimumShouldMatch("75%")
+                .prefixLength(5);
         boolQueryBuilder.must(matchQueryBuilder);
 
 
@@ -123,7 +119,7 @@ public class ESearch {
           boolQueryBuilder.should(new MatchQueryBuilder("year",year));
         }
         if(!author.equals("")){
-          boolQueryBuilder.should(new MatchQueryBuilder("author",author).boost(10f).operator(Operator.OR));
+          boolQueryBuilder.should(new MatchQueryBuilder("author",author).boost(50f).operator(Operator.OR));
         }
 
         searchSourceBuilder.query(boolQueryBuilder);
@@ -149,8 +145,8 @@ public class ESearch {
                   "img")||entry.getKey().equals("url")||entry.getKey().equals("description")){
 
             if(entry.getKey().equals("description")){
-              if(entry.getValue().toString().length()>150){
-                jsonObject.put(entry.getKey(),entry.getValue().toString().substring(0,151)+"...");
+              if(entry.getValue().toString().length()>200){
+                jsonObject.put(entry.getKey(),entry.getValue().toString().substring(0,201)+"...");
               }
               else{
                 jsonObject.put(entry.getKey(),entry.getValue());
@@ -206,8 +202,8 @@ public class ESearch {
           if(entry.getKey().equals("title")||entry.getKey().equals("author")||entry.getKey().equals(
                   "img")||entry.getKey().equals("url")||entry.getKey().equals("description")){
             if(entry.getKey().equals("description")){
-              if(entry.getValue().toString().length()>150){
-                jsonObject.put(entry.getKey(),entry.getValue().toString().substring(0,151)+"...");
+              if(entry.getValue().toString().length()>200){
+                jsonObject.put(entry.getKey(),entry.getValue().toString().substring(0,201)+"...");
               }
               else{
                 jsonObject.put(entry.getKey(),entry.getValue());
@@ -229,5 +225,4 @@ public class ESearch {
     client.close();
     return jsonArray;
   }
-
 }
